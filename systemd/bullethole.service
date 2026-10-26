@@ -1,0 +1,17 @@
+[Unit]
+Description=Bullet-hole shirt prop
+After=multi-user.target
+
+[Service]
+# Replace "pi" and the path with your user and install directory.
+User=pi
+WorkingDirectory=/home/pi/Bulletholeprop
+ExecStart=/home/pi/Bulletholeprop/.venv/bin/python -m bullethole
+# Headless: draw straight to the display. Remove this line if you run under the desktop.
+Environment=SDL_VIDEODRIVER=kmsdrm
+SupplementaryGroups=video render input
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
