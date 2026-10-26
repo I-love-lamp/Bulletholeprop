@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw
 FLESH_DARK = np.array([55, 0, 4], np.float32)
 FLESH_LIGHT = np.array([150, 14, 18], np.float32)
 RIM_COLOR = np.array([120, 8, 10], np.float32)
-DRIP_COLOR = np.array([95, 0, 6], np.float32)
+DRIP_COLOR = np.array([150, 6, 12], np.float32)
 SPLATTER_COLOR = (150, 16, 18)
 
 
@@ -34,8 +34,8 @@ class Drip:
 
 
 class Gore:
-    def __init__(self, width=800, height=480, hole_radius=150, seed=None,
-                 drip_count=24, bpm=72):
+    def __init__(self, width=800, height=480, hole_radius=180, seed=None,
+                 drip_count=36, bpm=72):
         self.width = width
         self.height = height
         self.bpm = bpm
@@ -120,12 +120,12 @@ class Gore:
             # Blood only runs from the lower part of the wound.
             theta = rng.uniform(0.15, 0.85) * math.pi
             r = float(self._radius_at(np.float32(theta)))
-            max_len = rng.uniform(40, 160)
+            max_len = rng.uniform(60, 200)
             speed = rng.uniform(22, 45)
             drips.append(Drip(
                 x=self.cx + r * math.cos(theta),
                 y=self.cy + r * math.sin(theta),
-                width=rng.uniform(3, 7),
+                width=rng.uniform(4, 9),
                 max_len=max_len,
                 speed=speed,
                 period=max_len / speed + rng.uniform(2, 6),
@@ -149,6 +149,16 @@ class Gore:
                 continue
             region = flesh[y0:y1, x0:x1]
             region[:] = region * (1 - fade) + DRIP_COLOR * fade
+
+            # A fat blob hangs off the tip of each drip.
+            r = d.width * 0.8
+            bx0, bx1 = max(0, int(d.x - r)), min(self.width, int(d.x + r) + 1)
+            by0, by1 = max(0, int(d.y + length - r)), min(self.height, int(d.y + length + r) + 1)
+            if bx1 > bx0 and by1 > by0:
+                yy, xx = np.mgrid[by0:by1, bx0:bx1]
+                blob = (xx - d.x) ** 2 + (yy - (d.y + length)) ** 2 <= r * r
+                patch = flesh[by0:by1, bx0:bx1]
+                patch[blob] = patch[blob] * (1 - fade) + DRIP_COLOR * fade
 
     def render(self, camera_frame, t=0.0):
         """Return one RGB uint8 frame: camera inside the hole, gore outside.
