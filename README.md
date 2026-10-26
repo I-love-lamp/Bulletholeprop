@@ -34,15 +34,21 @@ cd ~/Bulletholeprop
 python3 -m venv --system-site-packages .venv
 .venv/bin/pip install -r requirements.txt
 
-.venv/bin/python -m bullethole            # full screen
+.venv/bin/python -m bullethole             # serves http://127.0.0.1:8000/
+chromium --kiosk --noerrdialogs --incognito http://127.0.0.1:8000/
 ```
+
+The server streams the rear camera and serves the page. CSS animates the
+drips and the heartbeat, and Chromium in kiosk mode shows it full screen.
+(On some Raspberry Pi OS versions the binary is `chromium-browser`.)
 
 Desktop test without the Pi or camera:
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 -m bullethole --fake-camera --windowed
-python3 -m unittest tests/test_gore.py
+python3 -m bullethole --fake-camera
+# then open http://127.0.0.1:8000/ in a browser
+python3 -m unittest tests/test_gore.py tests/test_web.py
 ```
 
 To see a single rendered frame as a PNG:
@@ -75,6 +81,11 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now bullethole
 ```
 
+The service only runs the server. To open the page full screen at boot, add
+`chromium --kiosk --noerrdialogs --incognito http://127.0.0.1:8000/` to the
+desktop's autostart (log in automatically with the desktop session), or
+start it from a second service that waits for the server.
+
 If the screen is rotated, set `lcd_rotate=2` in `/boot/firmware/config.txt`.
 Check that the camera is enabled with `rpicam-hello`.
 
@@ -91,7 +102,9 @@ Check that the camera is enabled with `rpicam-hello`.
 
 ## Status
 
-The software is tested headlessly: the rendering and the composite are
-checked by `tests/test_gore.py`. The DSI display, camera colour order and
-the systemd service have not been run on real hardware yet. Check the colour
-and mirror options on the first power-up.
+The software is tested headlessly. `tests/` covers the wound geometry, the
+composite and the generated page. The page and drip animation were checked
+in headless Chromium against the test-pattern camera. The DSI display,
+camera colour order, kiosk autostart and the systemd service have not been
+run on real hardware yet. Check the colour and mirror options on the first
+power-up.

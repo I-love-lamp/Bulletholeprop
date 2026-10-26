@@ -86,6 +86,15 @@ class Gore:
             radius += amp * np.exp(-(diff ** 2) / (2 * width ** 2))
         return self.hole_radius * radius
 
+    def outline(self, count=240):
+        """Points around the wound edge, in pixels, for drawing the hole outline."""
+        thetas = np.linspace(-math.pi, math.pi, count, endpoint=False, dtype=np.float32)
+        radii = self._radius_at(thetas)
+        return [
+            (self.cx + float(r) * math.cos(t), self.cy + float(r) * math.sin(t))
+            for t, r in zip(thetas, radii)
+        ]
+
     def _build_background(self, rng):
         flesh = _fbm(rng, self.height, self.width, 3, 5)[..., None]
         flesh = FLESH_DARK + (FLESH_LIGHT - FLESH_DARK) * flesh
