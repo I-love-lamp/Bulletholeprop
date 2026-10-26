@@ -34,8 +34,8 @@ class Drip:
 
 
 class Gore:
-    def __init__(self, width=800, height=480, hole_radius=105, seed=None,
-                 drip_count=16, bpm=72):
+    def __init__(self, width=800, height=480, hole_radius=150, seed=None,
+                 drip_count=24, bpm=72):
         self.width = width
         self.height = height
         self.bpm = bpm
@@ -56,10 +56,16 @@ class Gore:
         self.dist = np.hypot(dx, dy)
         theta = np.arctan2(dy, dx)
 
-        # A few random harmonics make the entry wound torn rather than round.
+        # Random harmonics make the edge ragged, like a shotgun blast's
+        # uneven tearing rather than a clean round hole.
         self.lumps = [
-            (k, rng.uniform(0, 2 * math.pi), rng.uniform(0.03, 0.08) / math.sqrt(k))
+            (k, rng.uniform(0, 2 * math.pi), rng.uniform(0.05, 0.12) / math.sqrt(k))
             for k in range(3, 18)
+        ]
+        # Sharp tears where the tissue was blown outwards.
+        self.tears = [
+            (rng.uniform(-math.pi, math.pi), rng.uniform(0.05, 0.12), rng.uniform(0.15, 0.3))
+            for _ in range(6)
         ]
         self.edge = self._radius_at(theta).astype(np.float32)
 
@@ -67,12 +73,17 @@ class Gore:
         self.hole_alpha = np.clip((self.edge - self.dist) / feather + 0.5, 0, 1).astype(np.float32)
         # Walls of the hole fall into shadow so the camera reads as a tunnel.
         self.wall_shade = np.clip((self.edge - self.dist) / 14.0, 0, 1).astype(np.float32)
-        self.rim_alpha = np.clip(1 - (self.dist - self.edge) / 24.0, 0, 1).astype(np.float32)
+        self.rim_alpha = np.clip(1 - (self.dist - self.edge) / 40.0, 0, 1).astype(np.float32)
+        # Bruising spreads out from the wound.
+        self.bruise = np.clip(1 - (self.dist - self.edge) / 90.0, 0, 1).astype(np.float32)
 
     def _radius_at(self, theta):
         radius = np.ones_like(theta)
         for k, phase, amp in self.lumps:
             radius += amp * np.sin(k * theta + phase)
+        for angle, width, amp in self.tears:
+            diff = np.angle(np.exp(1j * (theta - angle)))
+            radius += amp * np.exp(-(diff ** 2) / (2 * width ** 2))
         return self.hole_radius * radius
 
     def _build_background(self, rng):
@@ -153,7 +164,7 @@ class Gore:
 
         pulse = 1.0 + 0.06 * math.sin(2 * math.pi * self.bpm / 60 * t)
         ra = self.rim_alpha[..., None]
-        flesh = self.background * pulse
+        flesh = self.background * pulse * (1 - 0.4 * self.bruise[..., None])
         flesh = flesh * (1 - 0.85 * ra) + self.rim_texture * pulse * 0.85 * ra
         self._paint_drips(flesh, t)
 

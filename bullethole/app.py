@@ -23,7 +23,7 @@ def parse_args(argv=None):
                         help="run in a window instead of full screen")
     parser.add_argument("--fps", type=int, default=20)
     parser.add_argument("--bpm", type=int, default=72, help="heartbeat speed of the rim")
-    parser.add_argument("--hole-radius", type=int, default=105)
+    parser.add_argument("--hole-radius", type=int, default=150)
     parser.add_argument("--seed", type=int, default=None,
                         help="fixed seed gives the same wound shape every run")
     return parser.parse_args(argv)
