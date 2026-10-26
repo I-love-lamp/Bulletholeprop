@@ -1,0 +1,5 @@
+numpy
+Pillow
+# On the Pi, picamera2 comes from apt (python3-picamera2), not pip.
+# Create the venv with --system-site-packages so it can see it.
+# Chromium (already on Raspberry Pi OS) shows the page; no pygame needed.

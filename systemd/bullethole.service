@@ -1,0 +1,14 @@
+[Unit]
+Description=Bullet-hole shirt prop server
+After=network.target
+
+[Service]
+# Replace "pi" and the path with your user and install directory.
+User=pi
+WorkingDirectory=/home/pi/Bulletholeprop
+ExecStart=/home/pi/Bulletholeprop/.venv/bin/python -m bullethole
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
