@@ -19,6 +19,7 @@ FLESH_DARK = np.array([55, 0, 4], np.float32)
 FLESH_LIGHT = np.array([150, 14, 18], np.float32)
 RIM_COLOR = np.array([120, 8, 10], np.float32)
 DRIP_COLOR = np.array([150, 6, 12], np.float32)
+DRIP_OPACITY = 0.85
 SPLATTER_COLOR = (150, 16, 18)
 
 
@@ -35,13 +36,15 @@ class Drip:
 
 class Gore:
     def __init__(self, width=800, height=480, hole_radius=180, seed=None,
-                 drip_count=36, bpm=72):
+                 drip_count=8, bpm=72, stretch=1.6):
         self.width = width
         self.height = height
         self.bpm = bpm
         self.cx = width / 2
         self.cy = height / 2
         self.hole_radius = hole_radius
+        # Wider than tall, so the portal fills most of the 16:9 screen.
+        self.stretch = stretch
 
         rng = np.random.default_rng(seed)
         self._build_hole(rng)
@@ -51,7 +54,7 @@ class Gore:
 
     def _build_hole(self, rng):
         ys, xs = np.mgrid[0:self.height, 0:self.width].astype(np.float32)
-        dx = xs - self.cx
+        dx = (xs - self.cx) / self.stretch
         dy = ys - self.cy
         self.dist = np.hypot(dx, dy)
         theta = np.arctan2(dy, dx)
@@ -91,7 +94,7 @@ class Gore:
         thetas = np.linspace(-math.pi, math.pi, count, endpoint=False, dtype=np.float32)
         radii = self._radius_at(thetas)
         return [
-            (self.cx + float(r) * math.cos(t), self.cy + float(r) * math.sin(t))
+            (self.cx + float(r) * self.stretch * math.cos(t), self.cy + float(r) * math.sin(t))
             for t, r in zip(thetas, radii)
         ]
 
@@ -126,19 +129,20 @@ class Gore:
     def _build_drips(self, count, rng):
         drips = []
         for _ in range(count):
-            # Blood only runs from the lower part of the wound.
-            theta = rng.uniform(0.15, 0.85) * math.pi
+            # Blood starts at the top edge of the wound and runs down through the view.
+            theta = rng.uniform(-0.85, -0.15) * math.pi
             r = float(self._radius_at(np.float32(theta)))
-            max_len = rng.uniform(60, 200)
-            speed = rng.uniform(22, 45)
+            period = rng.uniform(30, 60)
+            max_len = rng.uniform(260, 380)
             drips.append(Drip(
-                x=self.cx + r * math.cos(theta),
+                x=self.cx + r * self.stretch * math.cos(theta),
                 y=self.cy + r * math.sin(theta),
                 width=rng.uniform(4, 9),
                 max_len=max_len,
-                speed=speed,
-                period=max_len / speed + rng.uniform(2, 6),
-                phase=rng.uniform(0, 60),
+                # Reaches full length at 60% of the cycle, then holds and fades.
+                speed=max_len / (0.6 * period),
+                period=period,
+                phase=rng.uniform(0, period),
             ))
         return drips
 
@@ -147,8 +151,8 @@ class Gore:
             age = (t + d.phase) % d.period
             length = min(age * d.speed, d.max_len)
             # Each drip fades out at the end of its cycle, then grows again.
-            fade = min(1.0, d.period - age)
-            if length < 1 or fade <= 0:
+            alpha = DRIP_OPACITY * min(1.0, (d.period - age) / (0.25 * d.period))
+            if length < 1 or alpha <= 0:
                 continue
             x0 = max(0, int(d.x - d.width / 2))
             x1 = min(self.width, int(d.x + d.width / 2) + 1)
@@ -157,7 +161,7 @@ class Gore:
             if x1 <= x0 or y1 <= y0:
                 continue
             region = flesh[y0:y1, x0:x1]
-            region[:] = region * (1 - fade) + DRIP_COLOR * fade
+            region[:] = region * (1 - alpha) + DRIP_COLOR * alpha
 
             # A fat blob hangs off the tip of each drip.
             r = d.width * 0.8
@@ -167,7 +171,7 @@ class Gore:
                 yy, xx = np.mgrid[by0:by1, bx0:bx1]
                 blob = (xx - d.x) ** 2 + (yy - (d.y + length)) ** 2 <= r * r
                 patch = flesh[by0:by1, bx0:bx1]
-                patch[blob] = patch[blob] * (1 - fade) + DRIP_COLOR * fade
+                patch[blob] = patch[blob] * (1 - alpha) + DRIP_COLOR * alpha
 
     def render(self, camera_frame, t=0.0):
         """Return one RGB uint8 frame: camera inside the hole, gore outside.
@@ -185,12 +189,13 @@ class Gore:
         ra = self.rim_alpha[..., None]
         flesh = self.background * pulse * (1 - 0.4 * self.bruise[..., None])
         flesh = flesh * (1 - 0.85 * ra) + self.rim_texture * pulse * 0.85 * ra
-        self._paint_drips(flesh, t)
 
         cam = camera_frame.astype(np.float32)
         cam *= (0.5 + 0.5 * self.wall_shade)[..., None]
         ha = self.hole_alpha[..., None]
         out = cam * ha + flesh * (1 - ha)
+        # Drips run over the camera view, not behind it.
+        self._paint_drips(out, t)
         return np.clip(out, 0, 255).astype(np.uint8)
 
 

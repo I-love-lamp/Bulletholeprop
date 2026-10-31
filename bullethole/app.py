@@ -21,6 +21,8 @@ def parse_args(argv=None):
     parser.add_argument("--fps", type=int, default=15, help="camera stream frame rate")
     parser.add_argument("--bpm", type=int, default=72, help="heartbeat speed of the rim")
     parser.add_argument("--hole-radius", type=int, default=180)
+    parser.add_argument("--stretch", type=float, default=1.6,
+                        help="horizontal stretch of the portal; 1.0 is a circle")
     parser.add_argument("--seed", type=int, default=None,
                         help="fixed seed gives the same wound shape every run")
     return parser.parse_args(argv)
@@ -33,7 +35,8 @@ def main(argv=None):
         camera = TestPattern(WIDTH, HEIGHT)
     else:
         camera = PiCamera(WIDTH, HEIGHT, swap_rgb=not args.no_swap_rgb)
-    gore = Gore(WIDTH, HEIGHT, hole_radius=args.hole_radius, seed=args.seed, bpm=args.bpm)
+    gore = Gore(WIDTH, HEIGHT, hole_radius=args.hole_radius, seed=args.seed, bpm=args.bpm,
+                stretch=args.stretch)
 
     try:
         serve(gore, camera, port=args.port, mirror=args.mirror, fps=args.fps)

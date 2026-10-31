@@ -25,15 +25,16 @@ PAGE = """<!doctype html>
            background: #2a0004 url(/background.png) 0 0 / 800px 480px no-repeat; }
   #stage > * { position: absolute; left: 0; top: 0; }
   #bruise { width: 800px; height: 480px;
-            background: radial-gradient(circle at 400px 240px,
-                        transparent 170px, rgba(30, 0, 0, .5) 290px); }
+            background: radial-gradient(ellipse 520px 300px at 400px 240px,
+                        transparent 60%, rgba(30, 0, 0, .5) 100%); }
   .rim { width: 800px; height: 480px; transform-origin: 400px 240px;
          animation: beat __BEAT__s ease-in-out infinite; }
   #cam { width: 800px; height: 480px; clip-path: polygon(__POLY__); }
   #cam img { display: block; width: 800px; height: 480px; }
   .drip { height: 0; border-radius: 0 0 999px 999px; transform-origin: top;
           background: linear-gradient(90deg, #3d0104, #9a0b10 40%, #4f0205);
-          animation: drip var(--dur) ease-in-out infinite;
+          opacity: .85;
+          animation: drip var(--dur) ease-in infinite;
           animation-delay: var(--delay); }
   @keyframes beat {
     0%, 100% { opacity: .85; transform: scale(1); }
@@ -42,8 +43,8 @@ PAGE = """<!doctype html>
   }
   @keyframes drip {
     0%   { height: 0;            opacity: 1; }
-    55%  { height: var(--len);   opacity: 1; }
-    80%  { height: var(--len);   opacity: 1; }
+    60%  { height: var(--len);   opacity: 1; }
+    75%  { height: var(--len);   opacity: 1; }
     100% { height: var(--len);   opacity: 0; }
   }
 </style>
@@ -54,8 +55,8 @@ PAGE = """<!doctype html>
   <svg class="rim" width="800" height="480" viewBox="0 0 800 480">
     <path d="__PATH__" fill="none" stroke="#780810" stroke-width="40" style="filter: blur(10px)"/>
   </svg>
-__DRIPS__
   <div id="cam"><img src="/camera.mjpg" alt=""></div>
+__DRIPS__
   <svg width="800" height="480" viewBox="0 0 800 480">
     <path d="__PATH__" fill="none" stroke="rgba(0, 0, 0, .55)" stroke-width="14" style="filter: blur(5px)"/>
   </svg>
@@ -71,8 +72,8 @@ def build_page(gore):
     path = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in points) + " Z"
     drips = "\n".join(
         f'  <div class="drip" style="left: {d.x - d.width / 2:.1f}px; top: {d.y:.1f}px; '
-        f'width: {d.width:.1f}px; --len: {d.max_len:.1f}px; --dur: {d.period * 1.5:.1f}s; '
-        f'--delay: {-d.phase * 1.5:.1f}s"></div>'
+        f'width: {d.width:.1f}px; --len: {d.max_len:.1f}px; --dur: {d.period:.1f}s; '
+        f'--delay: {-d.phase:.1f}s"></div>'
         for d in gore.drips
     )
     return (PAGE
