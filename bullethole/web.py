@@ -25,8 +25,8 @@ PAGE = """<!doctype html>
            background: #2a0004 url(/background.png) 0 0 / 800px 480px no-repeat; }
   #stage > * { position: absolute; left: 0; top: 0; }
   #bruise { width: 800px; height: 480px;
-            background: radial-gradient(circle at 400px 240px,
-                        transparent 170px, rgba(30, 0, 0, .5) 290px); }
+            background: radial-gradient(ellipse 520px 300px at 400px 240px,
+                        transparent 60%, rgba(30, 0, 0, .5) 100%); }
   .rim { width: 800px; height: 480px; transform-origin: 400px 240px;
          animation: beat __BEAT__s ease-in-out infinite; }
   #cam { width: 800px; height: 480px; clip-path: polygon(__POLY__); }

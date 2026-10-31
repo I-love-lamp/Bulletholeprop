@@ -24,7 +24,7 @@ class WebTests(unittest.TestCase):
         points = self.gore.outline(count=36)
         self.assertEqual(len(points), 36)
         for x, y in points:
-            self.assertLess(abs(x - self.gore.cx), 50 * 1.6)
+            self.assertLess(abs(x - self.gore.cx), 50 * self.gore.stretch * 1.6)
             self.assertLess(abs(y - self.gore.cy), 50 * 1.6)
 
     def test_background_is_png(self):

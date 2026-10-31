@@ -35,13 +35,15 @@ class Drip:
 
 class Gore:
     def __init__(self, width=800, height=480, hole_radius=180, seed=None,
-                 drip_count=36, bpm=72):
+                 drip_count=36, bpm=72, stretch=1.6):
         self.width = width
         self.height = height
         self.bpm = bpm
         self.cx = width / 2
         self.cy = height / 2
         self.hole_radius = hole_radius
+        # Wider than tall, so the portal fills most of the 16:9 screen.
+        self.stretch = stretch
 
         rng = np.random.default_rng(seed)
         self._build_hole(rng)
@@ -51,7 +53,7 @@ class Gore:
 
     def _build_hole(self, rng):
         ys, xs = np.mgrid[0:self.height, 0:self.width].astype(np.float32)
-        dx = xs - self.cx
+        dx = (xs - self.cx) / self.stretch
         dy = ys - self.cy
         self.dist = np.hypot(dx, dy)
         theta = np.arctan2(dy, dx)
@@ -91,7 +93,7 @@ class Gore:
         thetas = np.linspace(-math.pi, math.pi, count, endpoint=False, dtype=np.float32)
         radii = self._radius_at(thetas)
         return [
-            (self.cx + float(r) * math.cos(t), self.cy + float(r) * math.sin(t))
+            (self.cx + float(r) * self.stretch * math.cos(t), self.cy + float(r) * math.sin(t))
             for t, r in zip(thetas, radii)
         ]
 
@@ -132,7 +134,7 @@ class Gore:
             max_len = rng.uniform(60, 200)
             speed = rng.uniform(22, 45)
             drips.append(Drip(
-                x=self.cx + r * math.cos(theta),
+                x=self.cx + r * self.stretch * math.cos(theta),
                 y=self.cy + r * math.sin(theta),
                 width=rng.uniform(4, 9),
                 max_len=max_len,
